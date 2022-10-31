@@ -1,9 +1,9 @@
 package main
 
 import (
-	"ws/internal/handlers"
-	"net/http"
 	"github.com/bmizerany/pat"
+	"net/http"
+	"ws/internal/handlers"
 )
 
 func routes() http.Handler {
