@@ -22,46 +22,53 @@
                 <hr>
             </div>
         </div>
-        <div class="row">
-            <div class="col-md-8">
-                <h3>Chat</h3>
+         <div class="row">
+        <div class="col-md-8">
+            <h3>Chat</h3>
+            <p><a href="https://github.com">Go to github</a></p>
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" name="username" id="username" class="form-control" autocomplete="off">
+            </div>
 
-                <div class="form-group">
-                    <label for="username">Username:</label>
-                    <input type="text" name="username" id="username" class="form-control" autocomplete="off">
-                </div>
+            <div class="form-group">
+                <label for="message">Message:</label>
+                <input type="text" name="message" id="message" class="form-control" autocomplete="off">
+            </div>
 
-                <div class="form-group">
-                    <label for="message">Message:</label>
-                    <input type="text" name="message" id="message" class="form-control" autocomplete="off">
-                </div>
+            <hr>
+            <a href="javascript:void(0);" class="btn btn-outline-secondary" id="sendBtn">Send Message</a>
 
-                <input type="hidden" name="action" id="action">
+            <input type="hidden" name="action" id="action">
 
-                <hr>
+            <hr>
 
-                <div id="output" class="chatbox">
-
-                </div>
+            <div id="output" class="chatbox">
 
             </div>
-            <div class="col-md-4">
-                <h3>Who's Online</h3>
 
-                <ul id="online_users">
-
-                </ul>
-            </div>
         </div>
+        <div class="col-md-4">
+            <h3>Who's Online</h3>
+
+            <ul id="online_users">
+
+            </ul>
+        </div>
+    </div>
     </div>
 
 </body>
 <script>
     let socket = null;
+    let o = document.getElementById("output");
+    let userField = document.getElementById("username");
+    let messageField = document.getElementById("message");
 
-    window.onbeforeunload = function() {
+    window.onbeforeunload = function () {
+        console.log("Leaving");
         let jsonData = {};
-        jsonData["action"] = 'left';
+        jsonData["action"] = "left";
         socket.send(JSON.stringify(jsonData))
     }
 
@@ -80,16 +87,12 @@
             console.log("there was an error");
         }
 
-       socket.onmessage = msg => {
-            // console.log(msg);
-            // let j = JSON.parse(msg.data);
-            // console.log(j);
-
+        socket.onmessage = msg => {
             let data = JSON.parse(msg.data);
             console.log("Action is", data.action);
+
             switch (data.action) {
                 case "list_users":
-                    console.log(data.connected_users)
                     let ul = document.getElementById("online_users");
                     while (ul.firstChild) ul.removeChild(ul.firstChild);
 
@@ -100,6 +103,10 @@
                             ul.appendChild(li);
                         })
                     }
+                    break;
+
+                case "broadcast":
+                    o.innerHTML = o.innerHTML + data.message + "<br>";
                     break;
             }
 
@@ -113,6 +120,44 @@
             jsonData["username"] = this.value;
             socket.send(JSON.stringify(jsonData));
         })
+
+        document.getElementById("message").addEventListener("keydown", function (event) {
+            if (event.code === "Enter") {
+                if (!socket) {
+                    console.log("no connection");
+                    return false
+                }
+
+                if ((userField.value === "") || (messageField.value === "")) {
+                    alert ("fill out user and message");
+                    return false;
+                } else {
+                    sendMessage()
+                }
+
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        })
+
+
+        document.getElementById("sendBtn").addEventListener("click", function() {
+            if ((userField.value === "") || (messageField.value === "")) {
+                alert ("fill out user and message");
+                return false;
+            } else {
+                sendMessage()
+            }
+        })
     })
+
+    function sendMessage() {
+        let jsonData = {};
+        jsonData["action"] = "broadcast";
+        jsonData["username"] = document.getElementById("username").value;
+        jsonData["message"] = document.getElementById("message").value;
+        socket.send(JSON.stringify(jsonData))
+        document.getElementById("message").value = "";
+    }
 </script>
 </html>

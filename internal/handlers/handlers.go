@@ -58,11 +58,14 @@ func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	log.Println("Client connected to endpoint")
 
-	conn := WebSocketConnection{Conn: ws}
-	clients[conn] = ""
-
 	var response WsJsonResponse
 	response.Message = "<em><small>Connected to server</small></em>"
+	
+	conn := WebSocketConnection{Conn: ws}
+	clients[conn] = ""
+	
+	response.Action = "Connect"
+	response.ConnectedUsers = getUserList()
 
 	err = ws.WriteJSON(response)
 	if err != nil {
@@ -112,6 +115,11 @@ func ListenToWsChannel() {
 				var users []string = getUserList()
 				response.ConnectedUsers = users
 				broadcastToAll(response)
+
+			case "broadcast":
+				response.Action = "broadcast"
+				response.Message = fmt.Sprintf("<strong>%s</strong>: %s", e.Username, e.Message)
+				broadcastToAll(response)
 		}
 
 	}
@@ -121,7 +129,9 @@ func getUserList() []string {
 	var userList []string
 
 	for _, x := range clients {
-		userList = append(userList, x)
+		if x != "" {
+			userList = append(userList, x)
+		}
 	}
 
 	sort.Strings(userList)
