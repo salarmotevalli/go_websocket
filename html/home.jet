@@ -59,6 +59,12 @@
 <script>
     let socket = null;
 
+    window.onbeforeunload = function() {
+        let jsonData = {};
+        jsonData["action"] = 'left';
+        socket.send(JSON.stringify(jsonData))
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
         socket = new WebSocket("ws://127.0.0.1:8080/ws");
 

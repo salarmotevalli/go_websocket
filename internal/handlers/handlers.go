@@ -99,12 +99,19 @@ func ListenToWsChannel() {
 		e := <-wsChan
 
 		switch e.Action {
-		case "username":
-			clients[e.Conn] = e.Username
-			var users []string = getUserList()
-			response.Action = "list_users"
-			response.ConnectedUsers = users
-			broadcastToAll(response)
+			case "username":
+				clients[e.Conn] = e.Username
+				var users []string = getUserList()
+				response.Action = "list_users"
+				response.ConnectedUsers = users
+				broadcastToAll(response)
+
+			case "left":
+				delete(clients, e.Conn)
+				response.Action = "list_users"
+				var users []string = getUserList()
+				response.ConnectedUsers = users
+				broadcastToAll(response)
 		}
 
 	}
