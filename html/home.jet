@@ -1,11 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/notie/dist/notie.min.css">
+    <style>
+        /* override styles here */
+        .notie-container {
+            box-shadow: none;
+        }
+    </style>
     <style>
         .chatbox {
             outline: 1px solid silver;
@@ -14,6 +23,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="row">
@@ -22,48 +32,51 @@
                 <hr>
             </div>
         </div>
-         <div class="row">
-        <div class="col-md-8">
-            <h3>Chat</h3>
-            <p><a href="https://github.com">Go to github</a></p>
-            <div class="form-group">
-                <label for="username">Username:</label>
-                <input type="text" name="username" id="username" class="form-control" autocomplete="off">
+        <div class="row">
+            <div class="col-md-8">
+                <h3>Chat</h3>
+                <p><a href="https://github.com">Go to github</a></p>
+                <div class="form-group">
+                    <label for="username">Username:</label>
+                    <input type="text" name="username" id="username" class="form-control" autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                    <label for="message">Message:</label>
+                    <input type="text" name="message" id="message" class="form-control" autocomplete="off">
+                </div>
+
+                <hr>
+                <a href="javascript:void(0);" class="btn btn-outline-secondary" id="sendBtn">Send Message</a>
+
+                <input type="hidden" name="action" id="action">
+
+                <hr>
+
+                <div id="output" class="chatbox">
+
+                </div>
+
             </div>
+            <div class="col-md-4">
+                <h3>Who's Online</h3>
 
-            <div class="form-group">
-                <label for="message">Message:</label>
-                <input type="text" name="message" id="message" class="form-control" autocomplete="off">
+                <ul id="online_users">
+
+                </ul>
             </div>
-
-            <hr>
-            <a href="javascript:void(0);" class="btn btn-outline-secondary" id="sendBtn">Send Message</a>
-
-            <input type="hidden" name="action" id="action">
-
-            <hr>
-
-            <div id="output" class="chatbox">
-
-            </div>
-
         </div>
-        <div class="col-md-4">
-            <h3>Who's Online</h3>
-
-            <ul id="online_users">
-
-            </ul>
-        </div>
-    </div>
     </div>
 
 </body>
+<script src="https://unpkg.com/notie"></script>
 <script>
     let socket = null;
     let o = document.getElementById("output");
     let userField = document.getElementById("username");
     let messageField = document.getElementById("message");
+
+
 
     window.onbeforeunload = function () {
         console.log("Leaving");
@@ -93,27 +106,37 @@
 
             switch (data.action) {
                 case "list_users":
-                    let ul = document.getElementById("online_users");
-                    while (ul.firstChild) ul.removeChild(ul.firstChild);
-
-                    if (data.connected_users.length > 0) {
-                        data.connected_users.forEach(function (item) {
-                            let li = document.createElement("li");
-                            li.appendChild(document.createTextNode(item));
-                            ul.appendChild(li);
-                        })
-                    }
+                    setOnlineUsersList(data)
                     break;
 
                 case "broadcast":
                     o.innerHTML = o.innerHTML + data.message + "<br>";
                     break;
+
+                case "Connect":
+                    setOnlineUsersList(data)
+                    break;
+
             }
 
         }
 
+        function setOnlineUsersList(data) {
+            let ul = document.getElementById("online_users");
+            while (ul.firstChild) ul.removeChild(ul.firstChild);
+            if (data.connected_users != null) {
+                if (data.connected_users.length > 0) {
+                    data.connected_users.forEach(function (item) {
+                        let li = document.createElement("li");
+                        li.appendChild(document.createTextNode(item));
+                        ul.appendChild(li);
+                    })
+                }            
+            }
+            
+        }
 
-        let userInput = document.getElementById("username");
+        let userInput = userField;
         userInput.addEventListener("change", function () {
             let jsonData = {};
             jsonData["action"] = "username";
@@ -121,7 +144,7 @@
             socket.send(JSON.stringify(jsonData));
         })
 
-        document.getElementById("message").addEventListener("keydown", function (event) {
+        messageField.addEventListener("keydown", function (event) {
             if (event.code === "Enter") {
                 if (!socket) {
                     console.log("no connection");
@@ -129,7 +152,7 @@
                 }
 
                 if ((userField.value === "") || (messageField.value === "")) {
-                    alert ("fill out user and message");
+                    errorMessage("fill out user and message");
                     return false;
                 } else {
                     sendMessage()
@@ -141,9 +164,9 @@
         })
 
 
-        document.getElementById("sendBtn").addEventListener("click", function() {
+        document.getElementById("sendBtn").addEventListener("click", function () {
             if ((userField.value === "") || (messageField.value === "")) {
-                alert ("fill out user and message");
+                errorMessage("fill out user and message");
                 return false;
             } else {
                 sendMessage()
@@ -154,10 +177,18 @@
     function sendMessage() {
         let jsonData = {};
         jsonData["action"] = "broadcast";
-        jsonData["username"] = document.getElementById("username").value;
-        jsonData["message"] = document.getElementById("message").value;
+        jsonData["username"] = userField.value;
+        jsonData["message"] = messageField.value;
         socket.send(JSON.stringify(jsonData))
-        document.getElementById("message").value = "";
+        messageField.value = "";
     }
+
+    function errorMessage(msg) {
+        notie.alert({
+            type: 'error', // optional, default = 4, enum: [1, 2, 3, 4, 5, 'success', 'warning', 'error', 'info', 'neutral']
+            text: msg,
+        })
+    } 
 </script>
+
 </html>

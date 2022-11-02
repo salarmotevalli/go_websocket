@@ -1,15 +1,16 @@
 package main
 
 import (
-	"github.com/bmizerany/pat"
 	"net/http"
 	"ws/internal/handlers"
+
+	"github.com/gorilla/mux"
 )
 
 func routes() http.Handler {
-	mux := pat.New()
+	mux := mux.NewRouter()
 
-	mux.Get("/", http.HandlerFunc(handlers.Home))
-	mux.Get("/ws", http.HandlerFunc(handlers.WsEndpoint))
+	mux.HandleFunc("/", handlers.Home)
+	mux.HandleFunc("/ws", handlers.WsEndpoint)
 	return mux
 }
